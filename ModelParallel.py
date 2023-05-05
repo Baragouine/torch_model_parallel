@@ -52,3 +52,7 @@ class ModelParallel(nn.Module):
         if j < len(self.tmp_sub_module.data):
           self.tmp_sub_module.data[j][2] = devices[i]
           self.tmp_sub_module.data[j][0].to(devices[i])
+          weights_counter[i] += self.tmp_sub_module.data[j][1]
+          j += 1
+        else:
+          break
