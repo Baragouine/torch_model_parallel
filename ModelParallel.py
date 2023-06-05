@@ -14,7 +14,7 @@ def get_device_free_memory(dev):
 
 
 # Ignore: not important
-class FackList:
+class FakeList:
   def __init__(self) -> None:
     self.data = []
 
@@ -22,11 +22,11 @@ class FackList:
 class ModelParallel(nn.Module):
   def __init__(self):
     super(ModelParallel, self).__init__()
-    self.tmp_sub_module = FackList()
+    self.tmp_sub_module = FakeList()
 
-  # Manage a sub module
+  # Manage a layer
   # weight: The weight of a submodule on a device
-  def mp_m(self, module, weight = 1):
+  def mp_l(self, module, weight = 1):
     self.tmp_sub_module.data.append([module, weight, None])
     return module
 
