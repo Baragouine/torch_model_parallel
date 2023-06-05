@@ -26,14 +26,31 @@ class ModelParallel(nn.Module):
 
   # Manage a layer
   # weight: The weight of a submodule on a device
-  def mp_l(self, module, weight = 1):
-    self.tmp_sub_module.data.append([module, weight, None])
-    return module
+  def mp_l(self, module_or_parameter):
+    weight = 0
+    if isinstance(module_or_parameter, nn.Module):
+      weight = sum(p.numel() for p in module_or_parameter.parameters())
+    if isinstance(module_or_parameter, nn.Parameter):
+      weight = module_or_parameter.numel()
+    self.tmp_sub_module.data.append([module_or_parameter, weight, None])
+    return module_or_parameter
 
   # Apply forward for module
   def mp_f(self, module, x):
     x = x.to(next(module.parameters()).device)
     return module(x)
+
+  # Return the device of the parameter
+  def mp_device(self, module_or_parameter):
+    if isinstance(module_or_parameter, ModelParallel):
+      return torch.device('')
+    if isinstance(module_or_parameter, nn.Module):
+      return next(module_or_parameter.parameters()).device
+    if isinstance(module_or_parameter, nn.Parameter):
+      return module_or_parameter.device
+    if hasattr(module_or_parameter, 'device'):
+      return module_or_parameter.device
+    raise AttributeError("device is not defined on input object or input object is not a module or a parameter.")
 
   # send sub module to devices
   def to_devices(self, devices):
