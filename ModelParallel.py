@@ -23,16 +23,25 @@ class ModelParallel(nn.Module):
   def __init__(self):
     super(ModelParallel, self).__init__()
     self.tmp_sub_module = FakeList()
+    self.tmp_sub_module_parallel = FakeList()
 
   # Manage a layer
   # weight: The weight of a submodule on a device
-  def mp_l(self, module_or_parameter):
+  def mp_l(self, module_or_parameter, model_parallel = False):
+    if model_parallel:
+      if not isinstance(module_or_parameter, ModelParallel):
+        AttributeError("Module is not ModelParallel.")
+      self.tmp_sub_module_parallel.append(module_or_parameter)
+      return module_or_parameter
+
     weight = 0
     if isinstance(module_or_parameter, nn.Module):
       weight = sum(p.numel() for p in module_or_parameter.parameters())
     if isinstance(module_or_parameter, nn.Parameter):
       weight = module_or_parameter.numel()
+
     self.tmp_sub_module.data.append([module_or_parameter, weight, None])
+
     return module_or_parameter
 
   # Apply forward for module
@@ -54,6 +63,9 @@ class ModelParallel(nn.Module):
 
   # send sub module to devices
   def to_devices(self, devices):
+    for mp in self.tmp_sub_module_parallel.data:
+      mp.to_devices(devices)
+
     gpus_memory = [get_device_free_memory(dev) for dev in devices]
     total_gpus_memory = sum(gpus_memory)
     sum_weights = sum([e[1] for e in self.tmp_sub_module.data])
